@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة التحكم - معمل الأمين</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="flex min-h-screen">
+<aside class="w-64 bg-[#0E4DA4] text-white p-6 hidden md:block">
+<h2 class="font-bold text-xl">🔬 معمل الأمين</h2>
+<nav class="mt-8 space-y-2 text-sm">
+<button onclick="show(\'stats\')" class="w-full text-right bg-white text-[#0E4DA4] p-2 rounded">📊 الإحصائيات</button>
+<button onclick="show(\'patients\')" class="w-full text-right p-2">👥 المرضى</button>
+<button onclick="show(\'tests\')" class="w-full text-right p-2">🧪 التحاليل</button>
+<button onclick="show(\'devices\')" class="w-full text-right p-2">🖥️ الأجهزة</button>
+<a href="index.html" class="block p-2 mt-10 border-t pt-4">⬅️ خروج</a>
+</nav>
+</aside>
+
+<main class="flex-1 p-4 md:p-6">
+<h1 class="text-2xl font-bold">لوحة التحكم</h1>
+
+<!-- احصائيات -->
+<div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+<div class="bg-white p-4 rounded-xl shadow"><p class="text-sm text-gray-500">مرضى اليوم</p><h3 class="text-2xl font-bold">24</h3></div>
+<div class="bg-white p-4 rounded-xl shadow"><p class="text-sm text-gray-500">تحاليل معلقة</p><h3 class="text-2xl font-bold">8</h3></div>
+<div class="bg-white p-4 rounded-xl shadow"><p class="text-sm text-gray-500">إيراد اليوم</p><h3 class="text-2xl font-bold">3,500 ج</h3></div>
+<div class="bg-white p-4 rounded-xl shadow"><p class="text-sm text-gray-500">الأجهزة</p><h3 class="text-2xl font-bold">5 نشط</h3></div>
+</div>
+
+<!-- المرضى -->
+<div id="patients" class="bg-white p-6 rounded-xl shadow mt-6 hidden">
+<h3 class="font-bold text-[#0E4DA4]">إضافة مريض جديد</h3>
+<div class="grid md:grid-cols-3 gap-4 mt-4">
+<input id="p_name" placeholder="اسم المريض" class="border p-2 rounded-xl">
+<input id="p_phone" placeholder="رقم الموبايل 01xxxxxxxxx" class="border p-2 rounded-xl">
+<input id="p_age" placeholder="السن" type="number" class="border p-2 rounded-xl">
+</div>
+<button onclick="addPatient()" class="bg-[#00BFA5] text-white px-6 py-2 rounded-full mt-4">حفظ المريض</button>
+<p id="msg" class="mt-2 text-green-600"></p>
+<div id="patients_list" class="mt-6 text-sm"></div>
+</div>
+
+<!-- التحاليل -->
+<div id="tests" class="bg-white p-6 rounded-xl shadow mt-6 hidden">
+<h3 class="font-bold text-[#0E4DA4]">إضافة تحليل جديد</h3>
+<div class="grid md:grid-cols-3 gap-4 mt-4">
+<input id="t_name" placeholder="اسم التحليل" class="border p-2 rounded-xl">
+<input id="t_price" placeholder="السعر" type="number" class="border p-2 rounded-xl">
+<input id="t_range" placeholder="النورمال مثلا 70-100" class="border p-2 rounded-xl">
+</div>
+<button onclick="addTest()" class="bg-[#0E4DA4] text-white px-6 py-2 rounded-full mt-4">حفظ التحليل</button>
+<p id="t_msg" class="mt-2 text-green-600"></p>
+</div>
+
+<!-- الاجهزة -->
+<div id="devices" class="bg-white p-6 rounded-xl shadow mt-6 hidden">
+<h3 class="font-bold text-[#0E4DA4]">إضافة جهاز</h3>
+<div class="grid md:grid-cols-3 gap-4 mt-4">
+<input id="d_name" placeholder="اسم الجهاز" class="border p-2 rounded-xl">
+<input id="d_model" placeholder="الموديل" class="border p-2 rounded-xl">
+<input id="d_next" type="date" class="border p-2 rounded-xl">
+</div>
+<button onclick="addDevice()" class="bg-[#0E4DA4] text-white px-6 py-2 rounded-full mt-4">حفظ الجهاز</button>
+<p id="d_msg" class="mt-2 text-green-600"></p>
+</div>
+
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script>
+function show(id){
+ document.getElementById(\'stats\').classList.add(\'hidden\');
+ document.getElementById(\'patients\').classList.add(\'hidden\');
+ document.getElementById(\'tests\').classList.add(\'hidden\');
+ document.getElementById(\'devices\').classList.add(\'hidden\');
+ if(id==\'stats\') document.getElementById(\'stats\').classList.remove(\'hidden\');
+ else document.getElementById(id).classList.remove(\'hidden\');
+}
+async function addPatient(){
+ let name=document.getElementById(\'p_name\').value;
+ let phone=document.getElementById(\'p_phone\').value;
+ let age=document.getElementById(\'p_age\').value;
+ let {error}=await supabase.from(\'patients\').insert([{name, phone, age}]);
+ document.getElementById(\'msg\').innerText= error ? \'خطأ: \'+error.message : \'تم حفظ المريض ✅\';
+ if(!error) loadPatients();
+}
+async function loadPatients(){
+ let {data}=await supabase.from(\'patients\').select(\'*\').order(\'created_at\',{ascending:false}).limit(5);
+ if(data){
+   let html=\'<b>اخر المرضى:</b><br>\';
+   data.forEach(p=> html+= `• ${p.name} - ${p.phone}<br>`);
+   document.getElementById(\'patients_list\').innerHTML=html;
+ }
+}
+async function addTest(){
+ let name=document.getElementById(\'t_name\').value;
+ let price=document.getElementById(\'t_price\').value;
+ let normal_range=document.getElementById(\'t_range\').value;
+ let {error}=await supabase.from(\'tests\').insert([{name, price, normal_range}]);
+ document.getElementById(\'t_msg\').innerText= error ? \'خطأ: \'+error.message : \'تم حفظ التحليل ✅\';
+}
+async function addDevice(){
+ let name=document.getElementById(\'d_name\').value;
+ let model=document.getElementById(\'d_model\').value;
+ let next_maintenance=document.getElementById(\'d_next\').value;
+ let {error}=await supabase.from(\'devices\').insert([{name, model, next_maintenance}]);
+ document.getElementById(\'d_msg\').innerText= error ? \'خطأ: \'+error.message : \'تم حفظ الجهاز ✅\';
+}
+loadPatients();
+</script>
+</body>
+</html>
